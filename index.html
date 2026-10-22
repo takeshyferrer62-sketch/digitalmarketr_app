@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="es" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DigitalMarket Mini App</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        tg: {
+                            bg: '#18222d',
+                            card: '#212e3d',
+                            accent: '#2ea6ff',
+                            hover: '#229ed9',
+                            text: '#f5f5f5',
+                            muted: '#8b9bb4'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- Telegram Web App SDK -->
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body class="bg-tg-bg text-tg-text min-h-screen font-sans pb-20">
+
+    <!-- Header / Navbar -->
+    <header class="sticky top-0 z-50 bg-tg-card/90 backdrop-blur border-b border-gray-700/50 px-4 py-3 flex items-center justify-between">
+        <div class="flex items-center space-x-2">
+            <span class="text-2xl">🌌</span>
+            <h1 class="font-bold text-lg tracking-wide">DigitalMarket</h1>
+        </div>
+        <div id="user-badge" class="text-xs bg-gray-700/50 px-2.5 py-1 rounded-full text-tg-muted">
+            Cargando usuario...
+        </div>
+    </header>
+
+    <!-- Main Container -->
+    <main class="max-w-md mx-auto p-4">
+
+        <!-- Vista 1: Catálogo -->
+        <section id="view-catalog" class="space-y-4">
+            <div class="flex space-x-2 border-b border-gray-700 pb-2">
+                <button onclick="switchTab('DIGITAL')" id="tab-digital" class="flex-1 py-2 text-sm font-semibold rounded-lg bg-tg-accent text-white transition">⭐ Digitales</button>
+                <button onclick="switchTab('PHYSICAL')" id="tab-physical" class="flex-1 py-2 text-sm font-semibold rounded-lg bg-tg-card text-tg-muted hover:text-white transition">📦 Físicos</button>
+            </div>
+            <div id="products-container" class="space-y-3">
+                <!-- Los productos se cargan dinámicamente aquí -->
+                <div class="text-center py-10 text-tg-muted">Cargando productos...</div>
+            </div>
+        </section>
+
+        <!-- Vista 2: Carrito -->
+        <section id="view-cart" class="space-y-4 hidden">
+            <h2 class="text-xl font-bold flex items-center space-x-2">
+                <i class="fa-solid fa-cart-shopping text-tg-accent"></i>
+                <span>Tu Carrito</span>
+            </h2>
+            <div id="cart-items-container" class="space-y-3">
+                <!-- Items del carrito -->
+            </div>
+            <div id="cart-summary" class="bg-tg-card p-4 rounded-xl border border-gray-700/50 space-y-3 hidden">
+                <!-- Resumen de totales y conversiones -->
+            </div>
+        </section>
+
+        <!-- Vista 3: Mis Pedidos -->
+        <section id="view-orders" class="space-y-4 hidden">
+            <h2 class="text-xl font-bold flex items-center space-x-2">
+                <i class="fa-solid fa-box-archive text-tg-accent"></i>
+                <span>Historial de Pedidos</span>
+            </h2>
+            <div id="orders-container" class="space-y-3">
+                <div class="text-center py-10 text-tg-muted">Cargando pedidos...</div>
+            </div>
+        </section>
+
+        <!-- Vista 4: Perfil / Puntos y Referidos -->
+        <section id="view-profile" class="space-y-4 hidden">
+            <h2 class="text-xl font-bold flex items-center space-x-2">
+                <i class="fa-solid fa-user-gear text-tg-accent"></i>
+                <span>Perfil y Recompensas</span>
+            </h2>
+            <div class="bg-tg-card p-4 rounded-xl border border-gray-700/50 space-y-4">
+                <div class="flex items-center justify-between border-b border-gray-700 pb-3">
+                    <div>
+                        <p class="text-xs text-tg-muted">Puntos de Fidelidad</p>
+                        <p id="profile-points" class="text-xl font-bold text-yellow-400">0 Puntos 💎</p>
+                    </div>
+                    <i class="fa-solid fa-gem text-3xl text-yellow-400/20"></i>
+                </div>
+                <div>
+                    <p class="text-xs text-tg-muted mb-1">Tu Enlace de Referido</p>
+                    <div class="flex space-x-2">
+                        <input type="text" id="profile-ref-link" readonly class="bg-gray-900 border border-gray-700 text-xs rounded-lg px-3 py-2 w-full text-tg-muted select-all" value="Cargando...">
+                        <button onclick="copyRefLink()" class="bg-tg-accent hover:bg-tg-hover text-white px-3 py-2 rounded-lg text-xs font-semibold"><i class="fa-regular fa-copy"></i></button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Bottom Navigation Bar -->
+    <nav class="fixed bottom-0 left-0 right-0 bg-tg-card/95 backdrop-blur border-t border-gray-700/50 px-4 py-2 flex justify-around items-center z-50 max-w-md mx-auto">
+        <button onclick="changeView('catalog')" id="nav-catalog" class="flex flex-col items-center text-tg-accent transition">
+            <i class="fa-solid fa-store text-lg"></i>
+            <span class="text-[10px] mt-0.5">Tienda</span>
+        </button>
+        <button onclick="changeView('cart')" id="nav-cart" class="flex flex-col items-center text-tg-muted hover:text-white transition relative">
+            <i class="fa-solid fa-cart-shopping text-lg"></i>
+            <span class="text-[10px] mt-0.5">Carrito</span>
+            <span id="cart-badge" class="absolute -top-1 -right-2 bg-red-500 text-white text-[9px] font-bold px-1.5 py-0.2 rounded-full hidden">0</span>
+        </button>
+        <button onclick="changeView('orders')" id="nav-orders" class="flex flex-col items-center text-tg-muted hover:text-white transition">
+            <i class="fa-solid fa-box-open text-lg"></i>
+            <span class="text-[10px] mt-0.5">Pedidos</span>
+        </button>
+        <button onclick="changeView('profile')" id="nav-profile" class="flex flex-col items-center text-tg-muted hover:text-white transition">
+            <i class="fa-solid fa-user text-lg"></i>
+            <span class="text-[10px] mt-0.5">Perfil</span>
+        </button>
+    </nav>
+
+    <!-- Script de Integración -->
+    <script>
+        // Configuración de la API (Cambia por tu URL real de Render)
+        const API_BASE = 'https://tu-backend-en-render.onrender.com/api';
+
+        // Inicializar Telegram WebApp SDK
+        const tg = window.Telegram.WebApp;
+        tg.ready();
+        tg.expand();
+
+        // Datos del usuario de Telegram simulados o reales
+        let user = tg.initDataUnsafe?.user || { id: 777888999, first_name: 'Yunier', username: 'yunier_dev' };
+        let currentType = 'DIGITAL';
+        let allProducts = [];
+
+        document.getElementById('user-badge.innerHTML').textContent = `@${user.username || user.first_name}`;
+
+        async function initApp() {
+            // Sincronizar usuario con backend
+            await fetch(`${API_BASE}/users/sync`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ telegramId: user.id, fullName: user.first_name, username: user.username })
+            });
+
+            loadProducts();
+            updateCartBadge();
+        }
+
+        async function loadProducts() {
+            try {
+                const res = await fetch(`${API_BASE}/products`);
+                allProducts = await res.json();
+                renderProducts();
+            } catch (err) {
+                console.error('Error cargando productos:', err);
+            }
+        }
+
+        function switchTab(type) {
+            currentType = type;
+            if (type === 'DIGITAL') {
+                document.getElementById('tab-digital').className = 'flex-1 py-2 text-sm font-semibold rounded-lg bg-tg-accent text-white transition';
+                document.getElementById('tab-physical').className = 'flex-1 py-2 text-sm font-semibold rounded-lg bg-tg-card text-tg-muted hover:text-white transition';
+            } else {
+                document.getElementById('tab-physical').className = 'flex-1 py-2 text-sm font-semibold rounded-lg bg-tg-accent text-white transition';
+                document.getElementById('tab-digital').className = 'flex-1 py-2 text-sm font-semibold rounded-lg bg-tg-card text-tg-muted hover:text-white transition';
+            }
+            renderProducts();
+        }
+
+        function renderProducts() {
+            const container = document.getElementById('products-container');
+            const filtered = allProducts.filter(p => p.product_type === currentType);
+
+            if (filtered.length === 0) {
+                container.innerHTML = '<div class="text-center py-10 text-tg-muted">No hay productos disponibles.</div>';
+                return;
+            }
+
+            container.innerHTML = filtered.map(p => `
+                <div class="bg-tg-card p-4 rounded-xl border border-gray-700/50 flex flex-col justify-between space-y-3">
+                    <div>
+                        <h3 class="font-bold text-base">${p.name}</h3>
+                        <p class="text-xs text-tg-muted mt-1">${p.description}</p>
+                    </div>
+                    <div class="flex items-center justify-between pt-2 border-t border-gray-700/50">
+                        <div>
+                            <span class="text-lg font-bold text-tg-accent">${p.price_usd} USD</span>
+                            <div class="text-[10px] text-tg-muted">RUB: ~${p.conversions.RUB} ₽ | CUP: ~${p.conversions.CUP}</div>
+                        </div>
+                        <button onclick="addToCart(${p.id})" class="bg-tg-accent hover:bg-tg-hover text-white px-4 py-2 rounded-lg text-xs font-semibold shadow transition">
+                            <i class="fa-solid fa-plus mr-1"></i> Añadir
+                        </button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        async function addToCart(productId) {
+            await fetch(`${API_BASE}/cart/add`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ telegramId: user.id, productId, quantity: 1 })
+            });
+            tg.HapticFeedback.notificationOccurred('success');
+            updateCartBadge();
+        }
+
+        async function updateCartBadge() {
+            const res = await fetch(`${API_BASE}/cart/${user.id}`);
+            const cart = await res.json();
+            const badge = document.getElementById('cart-badge');
+            if (cart.totalItems > 0) {
+                badge.textContent = cart.totalItems;
+                badge.classList.remove('hidden');
+            } else {
+                badge.classList.add('hidden');
+            }
+        }
+
+        async function loadCartView() {
+            const res = await fetch(`${API_BASE}/cart/${user.id}`);
+            const cart = await res.json();
+            const container = document.getElementById('cart-items-container');
+            const summary = document.getElementById('cart-summary');
+
+            if (!cart.items || cart.items.length === 0) {
+                container.innerHTML = '<div class="text-center py-10 text-tg-muted">Tu carrito está vacío.</div>';
+                summary.classList.add('hidden');
+                return;
+            }
+
+            container.innerHTML = cart.items.map(item => `
+                <div class="bg-tg-card p-3 rounded-xl border border-gray-700/50 flex justify-between items-center">
+                    <div>
+                        <h4 class="font-bold text-sm">${item.name}</h4>
+                        <p class="text-xs text-tg-muted">Cantidad: ${item.quantity} — ${item.total_usd} USD</p>
+                    </div>
+                </div>
+            `).join('');
+
+            summary.innerHTML = `
+                <div class="space-y-1 text-sm border-b border-gray-700 pb-3">
+                    <div class="flex justify-between"><span>Subtotal:</span><span class="font-bold">${cart.totalUSD} USD</span></div>
+                    <div class="flex justify-between text-tg-accent"><span>RUB Equivalente:</span><span>~${cart.conversions.RUB} ₽</span></div>
+                    <div class="flex justify-between text-tg-accent"><span>CUP Equivalente:</span><span>~${cart.conversions.CUP} CUP</span></div>
+                </div>
+                <button onclick="checkoutCart()" class="w-full bg-green-600 hover:bg-green-700 text-white py-3 rounded-xl font-bold text-sm shadow transition">
+                    <i class="fa-solid fa-lock mr-1"></i> Pagar Orden
+                </button>
+            `;
+            summary.classList.remove('hidden');
+        }
+
+        async function checkoutCart() {
+            const res = await fetch(`${API_BASE}/orders/checkout`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ telegramId: user.id, provider: 'USDT_BYBIT' })
+            });
+            const data = await res.json();
+            if (data.success) {
+                alert(`¡Orden #${data.order.order_code} generada con éxito! Revisa el bot para completar tu pago.`);
+                changeView('orders');
+            }
+        }
+
+        async function loadOrdersView() {
+            const res = await fetch(`${API_BASE}/cart/${user.id}`); // (O endpoint de pedidos si se conecta)
+            const container = document.getElementById('orders-container');
+            container.innerHTML = '<div class="bg-tg-card p-4 rounded-xl border border-gray-700/50 text-center text-xs text-tg-muted">Tus pedidos se sincronizan en tiempo real con el bot.</div>';
+        }
+
+        function changeView(view) {
+            ['catalog', 'cart', 'orders', 'profile'].forEach(v => {
+                document.getElementById(`view-${v}`).classList.add('hidden');
+                document.getElementById(`nav-${v}`).className = 'flex flex-col items-center text-tg-muted hover:text-white transition';
+            });
+            document.getElementById(`view-${view}`).classList.remove('hidden');
+            document.getElementById(`nav-${view}`).className = 'flex flex-col items-center text-tg-accent transition';
+
+            if (view === 'cart') loadCartView();
+            if (view === 'orders') loadOrdersView();
+            if (view === 'profile') {
+                document.getElementById('profile-ref-link').value = `https://t.me/DigitalMarketBot?start=ref_${user.id}`;
+            }
+        }
+
+        function copyRefLink() {
+            const input = document.getElementById('profile-ref-link');
+            input.select();
+            navigator.clipboard.writeText(input.value);
+            tg.HapticFeedback.notificationOccurred('success');
+            alert('¡Enlace de referido copiado!');
+        }
+
+        initApp();
+    </script>
+</body>
+</html>
